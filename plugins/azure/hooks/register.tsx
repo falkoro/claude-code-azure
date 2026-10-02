@@ -113,7 +113,7 @@ export const register: Register = (on, options) => {
       `- For the person's own pull requests and what blocks them, and the ones that wait for their vote, call ${TOOL('pull_requests')}.`,
       `- After you queue a run whose outcome you must act on, call ${TOOL('pipeline_watch')} with wake=true and stop polling; a prompt arrives when it finishes or waits on an approval.`,
       isHumanOnly
-        ? '- You never approve or reject a pipeline approval. When a run waits on one, tell the person and point them to /azure:runs, where they decide it.'
+        ? '- You never approve or reject a pipeline approval. When a run waits on one, tell the person and point them to /runs, where they decide it.'
         : '',
     ]
       .filter(Boolean)
@@ -183,7 +183,7 @@ export const register: Register = (on, options) => {
     const [verb = '', target = '', project] = e.args.trim().split(/\s+/)
     if (verb === 'watch' || verb === 'check') {
       const ref = runArg(target, project)
-      if (!ref) return { text: `Give the run as its URL, or as a build id and a project: /azure:runs ${verb} 1234 my-project` }
+      if (!ref) return { text: `Give the run as its URL, or as a build id and a project: /runs ${verb} 1234 my-project` }
       if (verb === 'check') return { text: await statusText($, ctx, ref, 40) }
       const run = await addRun($, ctx, ref, false, false)
       await openPanes($, PANE_RUNS)
@@ -230,7 +230,7 @@ export const register: Register = (on, options) => {
     if (!approvals.length) {
       return { result: `No pipeline approval waits for the signed-in person in ${scope(ctx, await read($, runsAtom)).join(', ') || 'any project'}.` }
     }
-    const where = isHumanOnly ? ' Only they decide them, in the /azure:runs pane.' : ''
+    const where = isHumanOnly ? ' Only they decide them, in the /runs pane.' : ''
     return {
       result: [
         `${approvals.length} approval(s) wait for the person.${where}`,
@@ -273,7 +273,7 @@ export const register: Register = (on, options) => {
 
     if (isHumanOnly && APPROVAL_API.test(command) && PATCH.test(command)) {
       return {
-        deny: 'azure: a pipeline approval is decided by the person, not the model. Tell them which run waits; they approve or reject it in /azure:runs.',
+        deny: 'azure: a pipeline approval is decided by the person, not the model. Tell them which run waits; they approve or reject it in /runs.',
       }
     }
 
@@ -662,7 +662,7 @@ async function loadSubscriptionTenants($: Engine, ctx: Ctx): Promise<void> {
   }
 }
 
-/** The chords the person bound to /azure:runs and /azure:prs, so the buttons show keys that work. */
+/** The chords the person bound to /runs and /prs, so the buttons show keys that work. */
 async function loadChords($: Engine, ctx: Ctx): Promise<void> {
   const home = (await $.env.get('HOME')) ?? (await $.env.get('USERPROFILE')) ?? ''
   const dir = (await $.env.get('CLAUDE_CONFIG_DIR')) ?? `${home}/.claude`

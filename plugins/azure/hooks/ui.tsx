@@ -123,7 +123,7 @@ export function drawPipelines(kit: Kit, d: PipelinesData, act: PipelinesActions)
             <Button key="clear" label="Clear finished" plain dimColor onPress={act.clearFinished} />
           )}
         </Box>
-        {d.runs.length === 0 && <Text dimColor>No run watched yet. Queue one, or run /azure:runs watch with its URL.</Text>}
+        {d.runs.length === 0 && <Text dimColor>No run watched yet. Queue one, or run /runs watch with its URL.</Text>}
         {d.runs.map(r => (
           <Box key={`run:${r.key}`} flexDirection="column">
             <Box flexDirection="row" gap={1}>

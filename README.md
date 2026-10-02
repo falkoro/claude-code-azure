@@ -77,11 +77,11 @@ The plugin ships a function-hook module (`plugins/azure/hooks/register.tsx`) tha
 
 | Part | What you get |
 | --- | --- |
-| **Pipelines tab** | `/azure:runs` opens it. The approvals you can decide, and the runs it watches with one mark per stage. A summary line says what waits for you. |
+| **Pipelines tab** | `/runs` opens it. The approvals you can decide, and the runs it watches with one mark per stage. A summary line says what waits for you. |
 | **Approvals** | Press **Approve** or **Reject**, then confirm the named stage. Only the second press sends the decision, as you, and the plugin checks Azure DevOps recorded it. An approval shows only when Azure DevOps gives you the `update` permission on it. |
 | **Honest verdicts** | A green run with skipped stages shows in yellow and names those stages, so a run that skipped its deploy doesn't pass as a deploy. A failed run names the stage, the task, and the first error. |
 | **Watched runs** | Each run Claude queues (`az pipelines run`, or a POST to the runs API), your own runs of the last 12 hours, and the run behind each approval. |
-| **Pull requests tab** | `/azure:prs` opens it. Your active pull requests with one mark per blocking policy and what blocks each one (conflict, failed policy, reject vote, waiting reviewer, open comments, expired build), or "ready to complete". Below them, the pull requests that wait for your vote, directly or through a team you're in (nested teams included). A failed read says so and keeps the last lists. An empty list always means nothing waits. |
+| **Pull requests tab** | `/prs` opens it. Your active pull requests with one mark per blocking policy and what blocks each one (conflict, failed policy, reject vote, waiting reviewer, open comments, expired build), or "ready to complete". Below them, the pull requests that wait for your vote, directly or through a team you're in (nested teams included). A failed read says so and keeps the last lists. An empty list always means nothing waits. |
 | **Buttons** | A Pipelines and a Pull requests button above the prompt, each with its count and the chord you bound to it. |
 | **Signals** | Tab labels count what needs you. A new approval or review opens the pane. A toast tells you when a run finishes or waits, when one of your pull requests changes, and when a new one waits for your vote. |
 | **Tools for Claude** | `pipeline_status` (one run stage by stage, the approval it waits on, the failed task's log tail), `pipeline_watch` (with `wake=true` the session gets a prompt when the run finishes or waits, so Claude doesn't poll), `pipeline_approvals`, and `pull_requests`. All read-only. |
@@ -89,7 +89,7 @@ The plugin ships a function-hook module (`plugins/azure/hooks/register.tsx`) tha
 
 > **Screenshot placeholder:** the Pull requests tab, opened from the button above the prompt.
 
-`/azure:runs` also takes `watch <run>`, `check <run>` (writes the stage-by-stage verdict into the conversation), `clear` (drops finished runs), and `refresh` (reads the credential again). A run is its URL, or its build ID and project.
+`/runs` also takes `watch <run>`, `check <run>` (writes the stage-by-stage verdict into the conversation), `clear` (drops finished runs), and `refresh` (reads the credential again). A run is its URL, or its build ID and project.
 
 ### Credential
 
@@ -104,7 +104,7 @@ Bind the commands to chords in `~/.claude/keybindings.json` (`/keybindings` open
 ```json
 {
   "bindings": [
-    { "context": "Chat", "bindings": { "ctrl+x p": "command:azure:runs", "ctrl+x r": "command:azure:prs" } }
+    { "context": "Chat", "bindings": { "ctrl+x p": "command:runs", "ctrl+x r": "command:prs" } }
   ]
 }
 ```
