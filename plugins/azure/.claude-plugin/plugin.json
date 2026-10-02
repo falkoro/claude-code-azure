@@ -1,8 +1,8 @@
 {
   "name": "azure",
   "displayName": "Azure & Azure DevOps",
-  "version": "0.1.0",
-  "description": "Pipelines and approvals, pull requests, work items, and Azure resources through the az CLI, with confirmation before every change",
+  "version": "0.2.0",
+  "description": "Pipelines and approvals, pull requests, work items, and Azure resources through the az CLI, with confirmation before every change, plus live panes for runs, approvals, and pull requests",
   "author": {
     "name": "falkoro",
     "url": "https://github.com/falkoro"
@@ -10,5 +10,66 @@
   "homepage": "https://github.com/falkoro/claude-code-azure",
   "repository": "https://github.com/falkoro/claude-code-azure",
   "license": "MIT",
-  "keywords": ["azure", "azure-devops", "az-cli", "pipelines", "pull-requests", "work-items", "boards"]
+  "keywords": [
+    "azure",
+    "azure-devops",
+    "az-cli",
+    "pipelines",
+    "pull-requests",
+    "work-items",
+    "boards",
+    "approvals",
+    "panes"
+  ],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "organization": {
+      "type": "string",
+      "title": "Azure DevOps organization",
+      "description": "The organization the panes and tools read, as a name or a https://dev.azure.com/<org> URL. Empty: the az devops default.",
+      "default": ""
+    },
+    "projects": {
+      "type": "string",
+      "title": "Projects to poll",
+      "description": "Comma-separated project names for approvals and your recent runs. Empty: the az devops default project.",
+      "default": ""
+    },
+    "adoTenant": {
+      "type": "string",
+      "title": "Azure DevOps tenant",
+      "description": "The Entra tenant ID the az token for Azure DevOps is requested in. Empty: the az CLI's current tenant.",
+      "default": ""
+    },
+    "tenants": {
+      "type": "string",
+      "title": "Tenants for portal links",
+      "description": "Comma-separated label=tenantId pairs, named in the system prompt so portal links open in the right directory.",
+      "default": ""
+    },
+    "pollSeconds": {
+      "type": "number",
+      "title": "Poll interval (seconds)",
+      "description": "How often the panes read Azure DevOps. Approvals refresh every second poll, your recent runs and pull requests every fourth.",
+      "default": 30
+    },
+    "humanOnlyApprovals": {
+      "type": "boolean",
+      "title": "Approvals are human-only",
+      "description": "Refuse model tool calls that approve or reject a pipeline approval, so only the pane buttons decide one. Off by default so the pipelines skill can approve after you confirm.",
+      "default": false
+    },
+    "linkHints": {
+      "type": "boolean",
+      "title": "Portal link hints",
+      "description": "Give the model ready portal links for Azure resource IDs in tool results.",
+      "default": true
+    },
+    "band": {
+      "type": "boolean",
+      "title": "Buttons above the prompt",
+      "description": "Show a Pipelines and a Pull requests button above the prompt, with the chord you bound to each.",
+      "default": true
+    }
+  }
 }
