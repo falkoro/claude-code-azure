@@ -12,7 +12,7 @@ printf '%s' "$cmd" | grep -Eq '(^|[^[:alnum:]_-])az[[:space:]]' || exit 0
 
 b='(^|[^[:alnum:]_-])'
 e='([^[:alnum:]_-]|$)'
-verbs='create|update|delete|remove|add|set|set-vote|run|queue|approve|reject|abandon|complete|reactivate|start|stop|restart|deallocate|purge|import|deploy'
+verbs='create|update|delete|remove|add|set|set-vote|run|queue|approve|reject|abandon|complete|reactivate|start|stop|restart|deallocate|purge|import|deploy|cancel|upload|scale|swap|assign|grant|revoke|regenerate|renew|resize|move|lock|unlock|capture|up|invoke-action|enable|disable|attach|detach|restore|rotate|reset'
 
 if printf '%s' "$cmd" | grep -Eq "${b}(${verbs})${e}" ||
   printf '%s' "$cmd" | grep -Eiq -- '(--method|-m)[[:space:]=]+[\\"'"'"']*(post|put|patch|delete)' ||
