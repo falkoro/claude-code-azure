@@ -23,10 +23,10 @@ With no request, list my open work items.
 
 ### Query
 
-`az boards query` returns only the fields named in the SELECT clause. This query lists my open items:
+`az boards query` returns only the fields named in the SELECT clause. It sends WIQL to the organization, not the project, so `@project` matches nothing, even with `--project`. Write the project name from `az devops configure --list` in place of `<project>` instead. When nothing matches, the command prints nothing. This query lists my open items:
 
 ```bash
-az boards query -o json --wiql "SELECT [System.Id], [System.WorkItemType], [System.Title], [System.State], [System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = @project AND [System.AssignedTo] = @me AND [System.State] NOT IN ('Closed', 'Done', 'Removed') ORDER BY [System.ChangedDate] DESC" \
+az boards query -o json --wiql "SELECT [System.Id], [System.WorkItemType], [System.Title], [System.State], [System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = '<project>' AND [System.AssignedTo] = @me AND [System.State] NOT IN ('Closed', 'Done', 'Removed') ORDER BY [System.ChangedDate] DESC" \
   --query "[].{id:id, type:fields.\"System.WorkItemType\", title:fields.\"System.Title\", state:fields.\"System.State\", assignedTo:fields.\"System.AssignedTo\".displayName}"
 ```
 
@@ -43,7 +43,7 @@ When a query includes text from the user, put the whole query in a quoted heredo
 
 ```bash
 wiql=$(cat <<'WIQL'
-SELECT [System.Id], [System.Title], [System.State] FROM WorkItems WHERE [System.TeamProject] = @project AND [System.Title] CONTAINS '<text>'
+SELECT [System.Id], [System.Title], [System.State] FROM WorkItems WHERE [System.TeamProject] = '<project>' AND [System.Title] CONTAINS '<text>'
 WIQL
 )
 az boards query -o json --wiql "$wiql" --query "[].{id:id, title:fields.\"System.Title\", state:fields.\"System.State\"}"
