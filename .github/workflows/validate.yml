@@ -1,0 +1,32 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check manifests, components, and the confirm hook
+        run: python3 scripts/validate.py
+      - name: Install Claude Code
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Claude Code plugin validator
+        run: |
+          claude plugin validate --strict .
+          claude plugin validate --strict ./plugins/azure
+
+  validate-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check manifests, components, and the confirm hook
+        run: python3 scripts/validate.py

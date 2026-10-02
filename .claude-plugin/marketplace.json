@@ -1,0 +1,17 @@
+{
+  "name": "claude-code-azure",
+  "description": "Azure and Azure DevOps for Claude Code, through the az CLI",
+  "owner": {
+    "name": "falkoro",
+    "url": "https://github.com/falkoro"
+  },
+  "plugins": [
+    {
+      "name": "azure",
+      "source": "./plugins/azure",
+      "description": "Pipelines and approvals, pull requests, work items, and Azure resources through the az CLI, with confirmation before every change",
+      "category": "cloud",
+      "tags": ["azure", "azure-devops", "pipelines", "pull-requests", "work-items"]
+    }
+  ]
+}

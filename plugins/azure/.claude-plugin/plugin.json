@@ -1,0 +1,14 @@
+{
+  "name": "azure",
+  "displayName": "Azure & Azure DevOps",
+  "version": "0.1.0",
+  "description": "Pipelines and approvals, pull requests, work items, and Azure resources through the az CLI, with confirmation before every change",
+  "author": {
+    "name": "falkoro",
+    "url": "https://github.com/falkoro"
+  },
+  "homepage": "https://github.com/falkoro/claude-code-azure",
+  "repository": "https://github.com/falkoro/claude-code-azure",
+  "license": "MIT",
+  "keywords": ["azure", "azure-devops", "az-cli", "pipelines", "pull-requests", "work-items", "boards"]
+}
