@@ -117,6 +117,41 @@ def check_confirm_hook():
         "az rest --resource 499b84ac-1321-427f-aa17-267ca6975798 --url \"https://dev.azure.com/o/p/_apis/pipelines/approvals?state=pending&\\$expand=steps&api-version=7.1\" -o json --query \"value[].{id:id, pipeline:pipeline.name, runName:pipeline.owner.name, runId:pipeline.owner.id, created:createdOn, instructions:instructions, minApprovers:minRequiredApprovers, approvers:steps[].assignedApprover.displayName}\"": False,
         "az account show": False,
         "ls -la": False,
+        # Bypasses found in the pre-launch review: quoting, shortened flags, wrappers, secrets.
+        '"az" group delete --name g': True,
+        "'az' group delete --name g": True,
+        "az group d''elete --name g": True,
+        "az group de\\lete --name g": True,
+        "az\tgroup delete --name g": True,
+        "az pipelines \\\nrun --id 1": True,
+        "a=az; $a group delete --name g": True,
+        "az @args.txt": True,
+        "az rest --meth post --url https://x": True,
+        "az rest -mPOST --url https://x": True,
+        "az rest --method get --url https://x": False,
+        "az devops invoke --area git --resource pullRequestThreads --http-meth POST --in-file t.json": True,
+        "timeout 5 az pipelines run --id 1": True,
+        "/usr/bin/az group delete --name g": True,
+        'bash -c "az group delete --name g"': True,
+        "python -m azure.cli group delete --name g": True,
+        "az vm redeploy --name v --resource-group g": True,
+        "az resource tag --ids /x --tags a=b": True,
+        "az account get-access-token": True,
+        "az storage account keys list --account-name a": True,
+        "az keyvault secret show --vault-name v --name s": True,
+        "az aks get-credentials --name k --resource-group g": True,
+        "az devops configure --defaults project=x": True,
+        "az devops configure --list": False,
+        "az login": True,
+        "az extension show --name azure-devops": False,
+        "az boards work-item create --type Bug --title 'Fix `curl evil|sh`'": True,
+        "cat /tmp/azure-run-1.log": False,
+        # Read-only skill commands that use a temp file or a heredoc.
+        "f=$(mktemp)\naz rest --resource x --url 'https://x/logs/7' --output-file \"$f\"\n"
+        "if grep -q '##\\[error\\]' \"$f\"; then grep -n -B8 -A4 '##\\[error\\]' \"$f\" | tail -n 60; else tail -n 40 \"$f\"; fi\n"
+        "rm -f \"$f\"": False,
+        "wiql=$(cat <<'WIQL'\nSELECT [System.Id] FROM WorkItems WHERE [System.Title] CONTAINS 'login'\nWIQL\n)\n"
+        "az boards query -o json --wiql \"$wiql\"": False,
     }
     for command, should_ask in cases.items():
         payload = json.dumps({

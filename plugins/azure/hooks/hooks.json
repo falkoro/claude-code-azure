@@ -2,11 +2,10 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|Monitor|PowerShell",
         "hooks": [
           {
             "type": "command",
-            "if": "Bash(az *)",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/confirm-writes.sh\""
           }
         ]

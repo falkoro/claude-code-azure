@@ -8,7 +8,7 @@ Ask Claude things like "why did last night's build fail?", "approve the producti
 
 ## What it does
 
-| Area | Read (runs directly) | Change (asks you first) |
+| Area | Read (no extra confirmation) | Change (asks you first) |
 | --- | --- | --- |
 | **Pipelines** | Recent runs; one run's status, failed stages and jobs, and the failing log excerpt; pending approvals | Rerun a pipeline, retry failed stages, approve or reject an approval |
 | **Pull requests** | PRs I created, PRs waiting for my review, PRs by repository; a PR's description, changed files, reviewers and votes, policies, and comment threads | Post a comment or reply, cast a vote |
@@ -37,6 +37,7 @@ Then run `/reload-plugins` or start a new session.
 
 ## Prerequisites
 
+- Claude Code 2.1.211 or later
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (`az`)
 - The Azure DevOps extension: `az extension add --name azure-devops`
 - A sign-in: `az login`. Pipeline approvals, stage retries, and log downloads call the Azure DevOps REST API through `az rest` with this Microsoft Entra ID sign-in. Everything else in Azure DevOps also works with a PAT set up through `az devops login`.
@@ -66,20 +67,20 @@ Each skill runs as a slash command, and Claude also picks it up on its own when 
 
 > **Screenshot placeholder:** `/azure:work-items mine`, then a state change confirmed and applied.
 
-## Safety model: nothing changes without your yes
+## Safety model: changes ask first
 
-Read-only actions such as list, show, query, and GET requests run directly. Every state-changing action goes through two separate checks:
+Read-only actions (list, show, query, GET requests) need no extra confirmation. State-changing actions are guarded twice:
 
-1. **Confirmation inside the session.** Approving, rejecting, rerunning, retrying, voting, commenting, creating or updating a work item, and linking are all state-changing actions. Before any of them runs, Claude resolves the IDs and names with read-only commands. It then shows a **Planned change** block with the action, the target by name and ID, old and new values, the full comment text, and the exact command. It asks you to confirm and runs only exactly what it showed, only after a clear yes. If the plan changes, it asks again.
-2. **A permission prompt from Claude Code.** The plugin ships a `PreToolUse` hook (`plugins/azure/hooks/confirm-writes.sh`). It inspects every `az` command Claude is about to run and returns an `ask` decision when the command changes state: write verbs such as `create`, `update`, `delete`, `run`, `set-vote`, `add`, `cancel`, `upload`, `scale`, `swap`, or `resize`, `az rest` with a POST/PUT/PATCH/DELETE method, or `az devops invoke` with a write `--http-method`. Claude Code then shows its own permission prompt for that command, even when an allow rule for `Bash(az *)` exists. The check is deliberately broad, so an occasional read-only command (such as `--help` on a write command) also prompts.
+1. **In the skill:** approving, rejecting, rerunning, retrying, voting, commenting, creating or updating a work item, and linking are all state-changing actions. Before any of them runs, Claude resolves the IDs and names with read-only commands. It then shows a **Planned change** block with the action, the target by name and ID, old and new values, the full comment text, and the exact command. It runs exactly what it showed, and only after you say yes. If the plan changes, it asks again.
+2. **In Claude Code:** the plugin's `PreToolUse` hook (`plugins/azure/hooks/confirm-writes.sh`) asks you before any `az` command that isn't a known read. A known read is a command whose last subcommand is `list`, `show`, `query`, or `version`, or an `az rest` / `az devops invoke` call with a GET method. Everything else asks: writes, `az rest` or `az devops invoke` with any other method, `az devops configure` without `--list`, commands that print secrets such as access tokens or storage keys, and `az` calls the hook can't parse. The hook overrides an allow rule such as `Bash(az *)`. It also applies in auto mode on Claude Code 2.1.211 or later. It is deliberately broad, so an occasional harmless command (such as `--help` on a write command) also prompts.
 
-Claude Code honors the hook's `ask` in auto mode too. In testing, it also prompted in `bypassPermissions` mode.
+The hook is a best-effort guard against mistakes, not a security boundary. A command hidden in a script file, for example, isn't inspected. For a hard guarantee, add `ask` or `deny` permission rules or use Claude Code's sandbox. Don't rely on it in `bypassPermissions` mode.
 
-Credentials stay with the az CLI. The plugin never stores, prints, or asks for tokens or secrets. It doesn't call `az account get-access-token` or print keys or connection strings. If you need a PAT, `az devops login` reads it from a hidden prompt, not from the chat.
+Credentials stay with the az CLI. The skills never ask for, store, or print tokens or secrets, and the hook asks before commands that print them. If you need a PAT, `az devops login` reads it from a hidden prompt, not from the chat.
 
 ## Why the az CLI and not MCP
 
-The existing Azure DevOps plugins for Claude Code cover only Azure DevOps and go through Microsoft's MCP servers. This plugin covers Azure and Azure DevOps together and uses the az CLI you already have installed and signed in. Nothing extra runs in the background, it works wherever `az` works, and every action is a plain command you can read in the transcript and run yourself.
+Most existing Azure DevOps plugins for Claude Code cover only Azure DevOps and go through Microsoft's MCP servers. This plugin covers Azure and Azure DevOps together and uses the az CLI you already have installed and signed in. Nothing extra runs in the background, it works wherever `az` works, and every action is a plain command you can read in the transcript and run yourself.
 
 ## Repository layout
 
@@ -89,7 +90,7 @@ plugins/azure/
   .claude-plugin/plugin.json        # plugin manifest
   skills/<name>/SKILL.md            # setup, pipelines, pull-requests, work-items, resources
   hooks/hooks.json                  # PreToolUse hook registration
-  hooks/confirm-writes.sh           # asks before state-changing az commands
+  hooks/confirm-writes.sh           # asks before az commands that aren't known reads
 scripts/validate.py                 # manifest, component, and hook checks
 ```
 
@@ -102,7 +103,7 @@ claude plugin validate --strict ./plugins/azure
 claude --plugin-dir ./plugins/azure          # try local changes without installing
 ```
 
-CI runs all three validation commands on every push and pull request.
+CI runs all three validation commands on pull requests and on pushes to `main`, and also runs `validate.py` on macOS.
 
 ## License
 

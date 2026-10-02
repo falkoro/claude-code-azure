@@ -1,22 +1,45 @@
 #!/usr/bin/env bash
-# PreToolUse hook: make Claude Code ask before any az command that changes state.
-# Reads the hook JSON on stdin and prints an "ask" decision for state-changing
-# az commands; read-only commands get no output and follow the normal flow.
-# Plain bash + sed + grep so it needs no jq or python.
+# PreToolUse hook: make Claude Code ask before any az command that is not a known read.
+# Allowlist, not denylist: an az call passes silently only when its last subcommand
+# word is a read verb (list, show, query, version), it touches no secret, and any
+# az rest / az devops invoke method is GET. Everything else, including az calls we
+# cannot parse, gets an "ask". Plain bash + sed + grep, no jq or python.
 
 input=$(tr -d '\n')
-# tool_input.command, still JSON-escaped; good enough for pattern matching.
-cmd=$(printf '%s' "$input" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\(\([^"\\]\|\\.\)*\)".*/\1/p')
+# ERE, not GNU-only BRE \|, so BSD sed on macOS extracts the command too.
+cmd=$(printf '%s' "$input" | sed -nE 's/.*"command"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p')
 [ -n "$cmd" ] || exit 0
-printf '%s' "$cmd" | grep -Eq '(^|[^[:alnum:]_-])az[[:space:]]' || exit 0
+# Undo the shell's ways of hiding a word: JSON \t \n \r become spaces, then drop
+# every quote and backslash so "az", 'az', \az, d''elete and de\lete read plainly.
+norm=$(printf '%s' "$cmd" | sed 's/\\[tnr]/ /g' | tr -d '"'"'"'\\' | tr '\t' ' ')
+printf '%s' "$norm" | grep -Eq '(^|[^[:alnum:]_.-])az([^[:alnum:]_-]|$)|azure\.cli' || exit 0
 
-b='(^|[^[:alnum:]_-])'
-e='([^[:alnum:]_-]|$)'
-verbs='create|update|delete|remove|add|set|set-vote|run|queue|approve|reject|abandon|complete|reactivate|start|stop|restart|deallocate|purge|import|deploy|cancel|upload|scale|swap|assign|grant|revoke|regenerate|renew|resize|move|lock|unlock|capture|up|invoke-action|enable|disable|attach|detach|restore|rotate|reset'
+ask() {
+  printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"Azure plugin: this az command may change state or reveal a secret. Check it before you allow it."}}'
+  exit 0
+}
 
-if printf '%s' "$cmd" | grep -Eq "${b}(${verbs})${e}" ||
-  printf '%s' "$cmd" | grep -Eiq -- '(--method|-m)[[:space:]=]+[\\"'"'"']*(post|put|patch|delete)' ||
-  printf '%s' "$cmd" | grep -Eiq -- '--http-method[[:space:]=]+[\\"'"'"']*(post|put|patch|delete)'; then
-  printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"Azure plugin: this az command changes state in Azure or Azure DevOps. Check it before you allow it."}}'
-fi
+# python -m azure.cli, az @argsfile, and anything else we cannot read: ask.
+printf '%s' "$norm" | grep -Eq 'azure\.cli|(^|[^[:alnum:]_.-])az[[:space:]]+@' && ask
+
+# Each az call: "az" plus its subcommand words (stop at the first flag or separator).
+while IFS= read -r seg; do
+  words=${seg#*az}
+  verb=${words##* }
+  [ -n "${words// /}" ] || ask                       # bare az, $a, az $(...)
+  printf '%s' "$words" | grep -Eq '(^| )(keys?|secret|credentials?|get-access-token|get-credentials|list-keys|show-connection-string|generate-sas|connection-string)( |$)' && ask
+  case "$words" in
+    " rest"|" devops invoke") verb=rest ;;
+  esac
+  case "$verb" in
+    list|show|query|version) ;;
+    configure) printf '%s' "$norm" | grep -Eq -- '(^|[[:space:]])(--list|-l)([[:space:]]|$)' || ask ;;
+    rest)
+      if printf '%s' "$norm" | grep -Eiq -- '(^|[[:space:]])(-m|--m[a-z]*|--h[a-z-]*)'; then
+        printf '%s' "$norm" | grep -Eiq -- '(^|[[:space:]])(-m|--m[a-z]*|--h[a-z-]*)([[:space:]=]+|)get([[:space:]]|$)' || ask
+      fi ;;
+    *) ask ;;
+  esac
+done < <(printf '%s' "$norm" | grep -oE '(^|[^[:alnum:]_.-])az([[:space:]]+[[:alnum:]][[:alnum:]_-]*)*([^[:alnum:]_-]|$)' |
+  sed -e 's/^[^a]*az/az/' -e 's/[^[:alnum:]_-]$//')
 exit 0
