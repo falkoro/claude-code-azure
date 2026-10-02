@@ -64,7 +64,7 @@ Show the runs as a compact table, with failed runs marked clearly.
 ```bash
 az rest --resource 499b84ac-1321-427f-aa17-267ca6975798 \
   --url "https://dev.azure.com/<org>/<project>/_apis/pipelines/approvals?state=pending&\$expand=steps&api-version=7.1" -o json \
-  --query "value[].{id:id, pipeline:pipeline.name, run:pipeline.owner.name, runId:pipeline.owner.id, created:createdOn, instructions:instructions, minApprovers:minRequiredApprovers, approvers:steps[].assignedApprover.displayName}"
+  --query "value[].{id:id, pipeline:pipeline.name, runName:pipeline.owner.name, runId:pipeline.owner.id, created:createdOn, instructions:instructions, minApprovers:minRequiredApprovers, approvers:steps[].assignedApprover.displayName}"
 ```
 
 List each approval with its pipeline, run, who can approve it, and its instructions. Other checks, such as business hours or required templates, can't be approved here. Point to the run's web page for those.
