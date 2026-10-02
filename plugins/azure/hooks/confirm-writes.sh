@@ -36,7 +36,7 @@ while IFS= read -r seg; do
     configure) printf '%s' "$norm" | grep -Eq -- '(^|[[:space:]])(--list|-l)([[:space:]]|$)' || ask ;;
     rest)
       if printf '%s' "$norm" | grep -Eiq -- '(^|[[:space:]])(-m|--m[a-z]*|--h[a-z-]*)'; then
-        printf '%s' "$norm" | grep -Eiq -- '(^|[[:space:]])(-m|--m[a-z]*|--h[a-z-]*)([[:space:]=]+|)get([[:space:]]|$)' || ask
+        printf '%s' "$norm" | grep -Eiq -- '(^|[[:space:]])(-m|--m[a-z]*|--h[a-z-]*)[[:space:]=]*get([[:space:]]|$)' || ask
       fi ;;
     *) ask ;;
   esac
