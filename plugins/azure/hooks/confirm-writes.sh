@@ -11,7 +11,7 @@ cmd=$(printf '%s' "$input" | sed -nE 's/.*"command"[[:space:]]*:[[:space:]]*"(([
 [ -n "$cmd" ] || exit 0
 # Undo the shell's ways of hiding a word: JSON \t \n \r become spaces, then drop
 # every quote and backslash so "az", 'az', \az, d''elete and de\lete read plainly.
-norm=$(printf '%s' "$cmd" | sed 's/\\[tnr]/ /g' | tr -d '"'"'"'\\' | tr '\t' ' ')
+norm=$(printf '%s' "$cmd" | sed 's/\\[tnr]/ /g' | tr -d '"'"'"'\\' | tr '\t' ' ' | sed 's/[;&|()`]/ ; /g')
 printf '%s' "$norm" | grep -Eq '(^|[^[:alnum:]_.-])az([^[:alnum:]_-]|$)|azure\.cli' || exit 0
 
 ask() {

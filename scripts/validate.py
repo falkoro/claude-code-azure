@@ -115,6 +115,9 @@ def check_confirm_hook():
         "az pipelines runs cancel --id 4": True,
         "az vm run-command invoke-action --name v": True,
         "az rest --resource 499b84ac-1321-427f-aa17-267ca6975798 --url \"https://dev.azure.com/o/p/_apis/pipelines/approvals?state=pending&\\$expand=steps&api-version=7.1\" -o json --query \"value[].{id:id, pipeline:pipeline.name, runName:pipeline.owner.name, runId:pipeline.owner.id, created:createdOn, instructions:instructions, minApprovers:minRequiredApprovers, approvers:steps[].assignedApprover.displayName}\"": False,
+        "az group list;az group delete -n g": True,
+        "az group list&&az group delete -n g": True,
+        "az group list|az group delete -n g": True,
         "az account show": False,
         "ls -la": False,
         # Bypasses found in the pre-launch review: quoting, shortened flags, wrappers, secrets.
