@@ -72,11 +72,15 @@ Each skill runs as a slash command, and Claude also picks it up on its own when 
 Read-only actions (list, show, query, GET requests) need no extra confirmation. State-changing actions are guarded twice:
 
 1. **In the skill:** approving, rejecting, rerunning, retrying, voting, commenting, creating or updating a work item, and linking are all state-changing actions. Before any of them runs, Claude resolves the IDs and names with read-only commands. It then shows a **Planned change** block with the action, the target by name and ID, old and new values, the full comment text, and the exact command. It runs exactly what it showed, and only after you say yes. If the plan changes, it asks again.
-2. **In Claude Code:** the plugin's `PreToolUse` hook (`plugins/azure/hooks/confirm-writes.sh`) asks you before any `az` command that isn't a known read. A known read is a command whose last subcommand is `list`, `show`, `query`, or `version`, or an `az rest` / `az devops invoke` call with a GET method. Everything else asks: writes, `az rest` or `az devops invoke` with any other method, `az devops configure` without `--list`, commands that print secrets such as access tokens or storage keys, and `az` calls the hook can't parse. The hook overrides an allow rule such as `Bash(az *)`. It also applies in auto mode on Claude Code 2.1.211 or later. It is deliberately broad, so an occasional harmless command (such as `--help` on a write command) also prompts.
+2. **In Claude Code:** the plugin's guard asks you before any `az` command that isn't a known read. A known read is a command whose last subcommand is `list`, `show`, `query`, or `version`, or an `az rest` / `az devops invoke` call with a GET method. Everything else asks: writes, `az rest` or `az devops invoke` with any other method, `az devops configure` without `--list`, commands that print secrets such as access tokens or storage keys, and `az` calls the hook can't parse. The guard overrides an allow rule such as `Bash(az *)`. It also applies in auto mode on Claude Code 2.1.211 or later. It is deliberately broad, so an occasional harmless command (such as `--help` on a write command) also prompts.
 
-The hook is a best-effort guard against mistakes, not a security boundary. A command hidden in a script file, for example, isn't inspected. For a hard guarantee, add `ask` or `deny` permission rules or use Claude Code's sandbox. Don't rely on it in `bypassPermissions` mode.
+   The guard is two hooks with the same rules:
+   - **A function hook** (`hooks/register.ts`, rules in `hooks/guard.ts`) answers Claude Code's permission check (`tool.check`) with "ask". This makes the plugin a [Claude Mod](https://claudemods.ai).
+   - **A shell `PreToolUse` hook** (`hooks/confirm-writes.sh`) asks too. In auto mode, an "ask" from the permission check goes to the auto-mode classifier rather than to you, while a `PreToolUse` "ask" still reaches you.
 
-Credentials stay with the az CLI. The skills never ask for, store, or print tokens or secrets, and the hook asks before commands that print them. If you need a PAT, `az devops login` reads it from a hidden prompt, not from the chat.
+It is a best-effort guard against mistakes, not a security boundary. A command hidden in a script file, for example, isn't inspected. For a hard guarantee, add `ask` or `deny` permission rules or use Claude Code's sandbox. Don't rely on it in `bypassPermissions` mode.
+
+Credentials stay with the az CLI. The skills never ask for, store, or print tokens or secrets, and the guard asks before commands that print them. If you need a PAT, `az devops login` reads it from a hidden prompt, not from the chat.
 
 ## Why the az CLI and not MCP
 
@@ -89,21 +93,25 @@ Most existing Azure DevOps plugins for Claude Code cover only Azure DevOps and g
 plugins/azure/
   .claude-plugin/plugin.json        # plugin manifest
   skills/<name>/SKILL.md            # setup, pipelines, pull-requests, work-items, resources
-  hooks/hooks.json                  # PreToolUse hook registration
-  hooks/confirm-writes.sh           # asks before az commands that aren't known reads
-scripts/validate.py                 # manifest, component, and hook checks
+  hooks/hooks.json                  # registers the function hook module and the PreToolUse hook
+  hooks/register.ts                 # function hook: asks at the permission check before az commands that aren't known reads
+  hooks/guard.ts                    # the rules: which az commands are known reads
+  hooks/confirm-writes.sh           # the same rules as a PreToolUse hook, which also asks in auto mode
+  tests/                            # function hook tests, run by claude plugin test
+scripts/validate.py                 # manifest, component, and shell hook checks
 ```
 
 ## Development
 
 ```bash
-python3 scripts/validate.py                  # manifests parse, referenced files exist, hook flags the right commands
+python3 scripts/validate.py                  # manifests parse, referenced files exist, shell hook flags the right commands
 claude plugin validate --strict .            # official marketplace validation
 claude plugin validate --strict ./plugins/azure
+claude plugin test ./plugins/azure           # function hook flags the same commands
 claude --plugin-dir ./plugins/azure          # try local changes without installing
 ```
 
-CI runs all three validation commands on pull requests and on pushes to `main`, and also runs `validate.py` on macOS.
+CI runs all four commands on pull requests and on pushes to `main`, and also runs `validate.py` on macOS.
 
 ## License
 
